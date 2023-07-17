@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 9eb2a2cd7d1df45c59e8847b96c5fce9c8c1e3967a260769bc2e9fee47d2b405 # shrinks to kernel = AVX2Kernel { func: 0x562da07dd5e0, r: 8, s: 2, loop_order: CAB }, flags = TileKernelFlags(0x0), outer_dim = 1
+cc c83529dc3218fb112f0a270bfe6133e30fcae004a23ecc8af35fe5e6b99105e8 # shrinks to kernel = AVX2Kernel { func: 0x55cf609e5300, r: 8, s: 1, loop_order: CAB }, flags = TileKernelFlags(0x0), outer_dim = 1, middle_lm = 1
