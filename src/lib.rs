@@ -1,8 +1,3 @@
-fn main() {
-    println!("Hello, world!");
-
-    // unsafe { extern_kernels::test_kernel() }
-}
 pub mod gemm;
 pub mod kernel;
 

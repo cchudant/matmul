@@ -31,11 +31,6 @@ impl Display for LoopOrder {
     }
 }
 
-// struct GemmPlan {
-//     kernel: unsafe fn(arg: *const TileKernelArguments) -> isize,
-//     loop_order: LoopOrder,
-// }
-
 bitflags::bitflags! {
     #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash)]
     #[repr(C)]
@@ -86,7 +81,7 @@ pub struct TileKernelArguments {
     middle_matrix: *mut u8,
     inner_matrix: *mut u8,
 
-    // strides are in number of elements
+    // strides are in number of bytes
     outer_stride_0: isize,
     outer_stride_1: isize,
     middle_stride_0: isize,
@@ -117,21 +112,9 @@ impl Display for AVX2Kernel {
     }
 }
 
-extern "C" {
-    #[link_name = "mmkernel_avx2_sss_8x2_cab_0_1_0"]
-    fn mmkernel_avx2_sss_8x2_cab(args: *const TileKernelArguments) -> isize;
-}
-
-const THE_KERNEL: &'static AVX2Kernel = &AVX2Kernel {
-    func: mmkernel_avx2_sss_8x2_cab,
-    r: 8,
-    s: 2,
-    loop_order: LoopOrder::CAB,
-};
-
 #[cfg(test)]
 mod test {
-    use ndarray::{s, Array, Array2, IntoDimension, Shape, ShapeBuilder, StrideShape};
+    use ndarray::{s, Array2, IntoDimension, ShapeBuilder};
     use num::{traits::AsPrimitive, Zero};
     use proptest::sample;
     use std::mem::size_of;
@@ -230,9 +213,8 @@ mod test {
         let ret = unsafe { (kernel.func)(&args as _) };
         assert_eq!(ret, 0);
 
-        println!("{:?}", outer_matrix
-        .slice(s![.., ..middle_lm]));
-    println!("{:?}\n\n", mid_matrix.t().slice(s![..middle_lm, ..]));
+        println!("{:?}", outer_matrix.slice(s![.., ..middle_lm]));
+        println!("{:?}\n\n", mid_matrix.t().slice(s![..middle_lm, ..]));
 
         let (truth, transpose, our_result) = match order {
             LoopOrder::ABC => (
@@ -253,10 +235,7 @@ mod test {
             ),
             LoopOrder::BCA => todo!(),
             LoopOrder::CAB => (
-                mid_matrix
-                    .t()
-                    .slice(s![..middle_lm, ..])
-                    .dot(&inner_matrix),
+                mid_matrix.t().slice(s![..middle_lm, ..]).dot(&inner_matrix),
                 true,
                 outer_matrix.slice(s![.., ..middle_lm]),
             ),
