@@ -27,53 +27,53 @@ pub enum ContiguousDimension {
     B_N = 1,
 }
 
-#[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
-pub enum LoopOrder {
-    ABC = 0, // n,m,k
-    BAC = 1, // m,n,k
-    ACB = 2, // n,k.m
-    BCA = 3, // m,k,n
-    CAB = 4, // k,n,m
-    CBA = 5, // k,m,n
-}
+// #[repr(u8)]
+// #[derive(Clone, Copy, PartialEq, Eq)]
+// #[allow(non_camel_case_types)]
+// pub enum LoopOrder {
+//     ABC = 0, // n,m,k
+//     BAC = 1, // m,n,k
+//     ACB = 2, // n,k.m
+//     BCA = 3, // m,k,n
+//     CAB = 4, // k,n,m
+//     CBA = 5, // k,m,n
+// }
 
-/// The microkernel must be called with at least one side of the input matrix that is:
-/// - contiguous (stride = element size)
-/// - properly aligned to the kernel prefered alignment
-/// On top of that, the tile dimensions `lm`, `ln`, `lk` must be less than or equal to
-/// the kernel prefered `M`, `N` and `K` tile dimensions respectively.
-///
-/// Strides should not be nul or negative.
-///
-/// The macrokernel (outer rust part) must use packing, padding and tiling to respect these conditions.
-///
-/// The microkernel (asm part) must support:
-/// - the different contiguous dimensions
-/// - having the any dimension (including the continuous one) being less that the kernel prefered tile size
-///
-/// The contiguous dimension can be less than the prefered tile size, because of padding added during packing
-/// which should not count in the total result. The microkernel is expected to handle that using masking.
-///
-/// If there is padding, it must be zeros.
-#[repr(C)]
-pub struct InnerKernelABI {
-    a_start: *const u8,
-    b_start: *const u8,
-    c_start: *mut u8,
-    contig_dim: isize,
-    tile_dim: isize,
-    lk: isize,
-    a_col_stride: isize, // m
-    a_row_stride: isize, // k
-    b_col_stride: isize, // k
-    b_row_stride: isize, // n
-    c_col_stride: isize, // m
-    c_row_stride: isize, // n
-    contiguous_dim: LoopOrder,
-    c_contig: bool,
-}
+// / The microkernel must be called with at least one side of the input matrix that is:
+// / - contiguous (stride = element size)
+// / - properly aligned to the kernel prefered alignment
+// / On top of that, the tile dimensions `lm`, `ln`, `lk` must be less than or equal to
+// / the kernel prefered `M`, `N` and `K` tile dimensions respectively.
+// /
+// / Strides should not be nul or negative.
+// /
+// / The macrokernel (outer rust part) must use packing, padding and tiling to respect these conditions.
+// /
+// / The microkernel (asm part) must support:
+// / - the different contiguous dimensions
+// / - having the any dimension (including the continuous one) being less that the kernel prefered tile size
+// /
+// / The contiguous dimension can be less than the prefered tile size, because of padding added during packing
+// / which should not count in the total result. The microkernel is expected to handle that using masking.
+// /
+// / If there is padding, it must be zeros.
+// #[repr(C)]
+// pub struct InnerKernelABI {
+//     a_start: *const u8,
+//     b_start: *const u8,
+//     c_start: *mut u8,
+//     contig_dim: isize,
+//     tile_dim: isize,
+//     lk: isize,
+//     a_col_stride: isize, // m
+//     a_row_stride: isize, // k
+//     b_col_stride: isize, // k
+//     b_row_stride: isize, // n
+//     c_col_stride: isize, // m
+//     c_row_stride: isize, // n
+//     contiguous_dim: LoopOrder,
+//     c_contig: bool,
+// }
 
 // impl InnerKernelABI {
 //     fn assert_valid<K: GemmKernel>(&self) {
@@ -101,113 +101,113 @@ pub struct InnerKernelABI {
 //     }
 // }
 
-/// The packing kernel will only pad rows, not the columns.
-/// You can call it with swapped dimensions/strides to pack the columns instead.
-#[repr(C)]
-pub struct PackKernelABI {
-    src: *const u8,
-    rows: isize,
-    row_stride: isize,
-    cols: isize,
-    col_stride: isize,
-    dest: *mut u8,
-    padding: isize,
-}
+// / The packing kernel will only pad rows, not the columns.
+// / You can call it with swapped dimensions/strides to pack the columns instead.
+// #[repr(C)]
+// pub struct PackKernelABI {
+//     src: *const u8,
+//     rows: isize,
+//     row_stride: isize,
+//     cols: isize,
+//     col_stride: isize,
+//     dest: *mut u8,
+//     padding: isize,
+// }
 
-pub trait GemmKernel {
-    type ATy: DType + Mul<Self::BTy, Output = Self::CTy>;
-    type BTy: DType;
-    type CTy: DType + Add<Output = Self::CTy>;
+// pub trait GemmKernel {
+//     type ATy: DType + Mul<Self::BTy, Output = Self::CTy>;
+//     type BTy: DType;
+//     type CTy: DType + Add<Output = Self::CTy>;
 
-    /// Prefered tile size for the contig dim
-    const CONTIG_DIM: usize;
-    /// Prefered for the other non-k dim
-    const TILE_DIM: usize;
-    /// Alignment requirement for the contiguous dimension.
-    const ALIGN_CONTIGUOUS_DIM_TO: usize;
+//     /// Prefered tile size for the contig dim
+//     const CONTIG_DIM: usize;
+//     /// Prefered for the other non-k dim
+//     const TILE_DIM: usize;
+//     /// Alignment requirement for the contiguous dimension.
+//     const ALIGN_CONTIGUOUS_DIM_TO: usize;
 
-    unsafe fn execute(&self, info: *const InnerKernelABI);
+//     unsafe fn execute(&self, info: *const InnerKernelABI);
 
-    unsafe fn pack_a(&self, info: *const PackKernelABI) {
-        naive_pack::<Self::ATy>(info)
-    }
-    unsafe fn pack_b(&self, info: *const PackKernelABI) {
-        naive_pack::<Self::BTy>(info)
-    }
-}
+//     unsafe fn pack_a(&self, info: *const PackKernelABI) {
+//         naive_pack::<Self::ATy>(info)
+//     }
+//     unsafe fn pack_b(&self, info: *const PackKernelABI) {
+//         naive_pack::<Self::BTy>(info)
+//     }
+// }
 
-pub struct NaiveKernel;
-impl GemmKernel for NaiveKernel {
-    const CONTIG_DIM: usize = 8;
-    const TILE_DIM: usize = 11;
-    const ALIGN_CONTIGUOUS_DIM_TO: usize = 32;
-    type ATy = f32;
-    type BTy = f32;
-    type CTy = f32;
+// pub struct NaiveKernel;
+// impl GemmKernel for NaiveKernel {
+//     const CONTIG_DIM: usize = 8;
+//     const TILE_DIM: usize = 11;
+//     const ALIGN_CONTIGUOUS_DIM_TO: usize = 32;
+//     type ATy = f32;
+//     type BTy = f32;
+//     type CTy = f32;
 
-    unsafe fn execute(&self, info: *const InnerKernelABI) {
-        let info = info.read();
-        for i_m in 0..info.contig_dim as isize {
-            for i_n in 0..info.tile_dim as isize {
-                for i_k in 0..info.lk as isize {
-                    let a_val = info
-                        .a_start
-                        .offset(i_m * info.a_col_stride + i_k)
-                        .cast::<Self::ATy>()
-                        .read();
-                    let b_val = info
-                        .b_start
-                        .offset(i_k * info.b_col_stride + i_n * info.b_row_stride)
-                        .cast::<Self::BTy>()
-                        .read();
-                    let c_ptr = info
-                        .c_start
-                        .offset(i_m * info.c_col_stride + i_n * info.c_row_stride)
-                        .cast::<Self::CTy>();
+//     unsafe fn execute(&self, info: *const InnerKernelABI) {
+//         let info = info.read();
+//         for i_m in 0..info.contig_dim as isize {
+//             for i_n in 0..info.tile_dim as isize {
+//                 for i_k in 0..info.lk as isize {
+//                     let a_val = info
+//                         .a_start
+//                         .offset(i_m * info.a_col_stride + i_k)
+//                         .cast::<Self::ATy>()
+//                         .read();
+//                     let b_val = info
+//                         .b_start
+//                         .offset(i_k * info.b_col_stride + i_n * info.b_row_stride)
+//                         .cast::<Self::BTy>()
+//                         .read();
+//                     let c_ptr = info
+//                         .c_start
+//                         .offset(i_m * info.c_col_stride + i_n * info.c_row_stride)
+//                         .cast::<Self::CTy>();
 
-                    let c_val = c_ptr.read();
+//                     let c_val = c_ptr.read();
 
-                    c_ptr.write(c_val + a_val * b_val)
-                }
-            }
-        }
-    }
-}
+//                     c_ptr.write(c_val + a_val * b_val)
+//                 }
+//             }
+//         }
+//     }
+// }
 
-unsafe fn naive_pack<Ty: DType>(info: *const PackKernelABI) {
-    let mut info = info.read();
+// unsafe fn naive_pack<Ty: DType>(info: *const PackKernelABI) {
+//     let mut info = info.read();
 
-    for j in 0..info.cols {
-        for i in 0..info.rows {
-            let val = info
-                .src
-                .offset(j * info.col_stride + i * info.row_stride)
-                .cast::<Ty>()
-                .read();
-            info.dest.cast::<Ty>().write(val);
-            info.dest = info.dest.add(Ty::SIZE_OF);
-        }
+//     for j in 0..info.cols {
+//         for i in 0..info.rows {
+//             let val = info
+//                 .src
+//                 .offset(j * info.col_stride + i * info.row_stride)
+//                 .cast::<Ty>()
+//                 .read();
+//             info.dest.cast::<Ty>().write(val);
+//             info.dest = info.dest.add(Ty::SIZE_OF);
+//         }
 
-        for i in 0..info.padding {
-            info.dest.cast::<Ty>().write(Default::default());
-            info.dest = info.dest.add(Ty::SIZE_OF);
-        }
-    }
-}
+//         for i in 0..info.padding {
+//             info.dest.cast::<Ty>().write(Default::default());
+//             info.dest = info.dest.add(Ty::SIZE_OF);
+//         }
+//     }
+// }
 
-pub struct MatInfo {
-    start: *mut u8,
-    rows: isize,
-    cols: isize,
-    row_stride: isize,
-    col_stride: isize,
-}
+// pub struct MatInfo {
+//     start: *mut u8,
+//     rows: isize,
+//     cols: isize,
+//     row_stride: isize,
+//     col_stride: isize,
+// }
 
-pub struct MacroKernelInfo {
-    a: MatInfo,
-    b: MatInfo,
-    c: MatInfo,
-}
+// pub struct MacroKernelInfo {
+//     a: MatInfo,
+//     b: MatInfo,
+//     c: MatInfo,
+// }
 
 /*
 /// safety:

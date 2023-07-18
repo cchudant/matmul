@@ -34,7 +34,7 @@ impl Display for LoopOrder {
 bitflags::bitflags! {
     #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Hash)]
     #[repr(C)]
-    struct TileKernelFlags: u8 {
+    pub struct TileKernelFlags: u8 {
         /// Here, contig means contiguous on the first dimension AND simd aligned AND properly initialized.
         /// The other dimension can be strided.
         const OUTER_IS_CONTIG = 0b01;
@@ -70,36 +70,36 @@ impl Arbitrary for TileKernelFlags {
 
 #[derive(Clone, Debug)]
 #[repr(C)]
-pub struct TileKernelArguments {
+pub(crate) struct TileKernelArguments {
     /// How many loops the outer loop should do
-    outer_len: usize,
+    pub outer_len: usize,
     /// How many elements in the tile on the middle (SIMD) direction.
     /// This is used for tiles that are smaller than the simd size.
-    middle_lm: usize,
+    pub middle_lm: usize,
 
-    outer_matrix: *mut u8,
-    middle_matrix: *mut u8,
-    inner_matrix: *mut u8,
+    pub outer_matrix: *mut u8,
+    pub middle_matrix: *mut u8,
+    pub inner_matrix: *mut u8,
 
     // strides are in number of bytes
-    outer_stride_0: isize,
-    outer_stride_1: isize,
-    middle_stride_0: isize,
-    middle_stride_1: isize,
-    inner_stride_0: isize,
-    inner_stride_1: isize,
+    pub outer_stride_0: isize,
+    pub outer_stride_1: isize,
+    pub middle_stride_0: isize,
+    pub middle_stride_1: isize,
+    pub inner_stride_0: isize,
+    pub inner_stride_1: isize,
 
-    flags: TileKernelFlags,
+    pub flags: TileKernelFlags,
 }
 
 #[derive(Debug)]
 pub struct AVX2Kernel {
-    pub func: unsafe extern "C" fn(arg: *const TileKernelArguments) -> isize,
+    pub(crate) func: unsafe extern "C" fn(arg: *const TileKernelArguments) -> isize,
     /// SIMD dimension
-    pub r: usize,
+    pub(crate) r: usize,
     /// second tiling dimension
-    pub s: usize,
-    pub loop_order: LoopOrder,
+    pub(crate) s: usize,
+    pub(crate) loop_order: LoopOrder,
 }
 
 impl Display for AVX2Kernel {
@@ -113,7 +113,7 @@ impl Display for AVX2Kernel {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod tests {
     use ndarray::{s, Array2, IntoDimension, ShapeBuilder};
     use num::{traits::AsPrimitive, Zero};
     use proptest::sample;
@@ -125,7 +125,7 @@ mod test {
         mem::MaybeUninit,
     };
 
-    fn make_matrix<T: Copy + 'static>(d0: usize, d1: usize, zero: bool) -> Array2<T>
+    pub(crate) fn make_matrix<T: Copy + 'static>(d0: usize, d1: usize, zero: bool) -> Array2<T>
     where
         usize: AsPrimitive<T>,
         T: Zero,
