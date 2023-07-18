@@ -73,7 +73,7 @@
             {%- else %}
                 vextractps r9d, xmm15, {{a_j}}
                 vmovd xmm14, r9d
-                vaddps xmm14, xmm14, [r15]
+                vaddss xmm14, xmm14, [r15]
                 vmovss [r15], xmm14
             {%- endif %}
 
@@ -380,7 +380,7 @@ Registers:
                 {%- if LOOP_ORDER == "acb" or LOOP_ORDER == "bca" %}
                     vextractps r9d, xmm15, {{a_j}}
                     vmovd xmm14, r9d
-                    vaddps xmm14, xmm14, [r15]
+                    vaddss xmm14, xmm14, [r15]
                     vmovss [r15], xmm14
                 {%- else %}
                     {%- if a_j == 0 %}
@@ -416,7 +416,7 @@ Registers:
             {%- if LOOP_ORDER == "acb" or LOOP_ORDER == "bca" %}
                 vextractps r9d, xmm15, {{a_j}}
                 vmovd xmm14, r9d
-                vaddps xmm14, xmm14, [r15]
+                vaddss xmm14, xmm14, [r15]
                 vmovss [r15], xmm14
             {%- else %}
                 {%- if a_j == 0 %}
